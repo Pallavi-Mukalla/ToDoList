@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List Application</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0f7fa;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #app {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #00796b;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #004d40;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 350px;
+            position: relative;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .task-list {
+            margin-top: 20px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center; /* Align the label and button vertically */
+            margin-bottom: 10px; /* Add space between each task */
+        }
+        
+        .task-label {
+            margin-right: 20px; /* Add space between label and button */
+            flex-grow: 1;
+        }
+
+        #confirmationModal .modal-content {
+            text-align: center;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            resize: none; /* Prevents resizing */
+            box-sizing: border-box; /* Ensures padding is included in the total width */
+        }
+
+        textarea {
+            height: 80px; /* Fixed height for the text area */
+        }
+
+        /* Completed button styling */
+        .completed {
+            background-color: #4caf50; /* Green color */
+            color: white;
+            cursor: not-allowed;
+        }
+
+        /* Additional Modal Styling */
+        .modal h3 {
+            color: #00796b;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .c-button{
+            margin-left: auto;
+            width: 200px;
+            align-self: right;
+            display: block;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>To-Do List</h1>
+        <!-- Buttons to open modals -->
+        <button id="openAddModal">Add Task</button>
+        <button id="openDeleteModal">Delete Task</button>
+        <button id="openDisplayModal">Display Tasks</button>
+        <button id="openMarkCompleteModal">Mark as Complete</button>
+    </div>
+
+    <!-- Modal for Adding Task -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAddModal">&times;</span>
+            <h3>Add a Task</h3>
+            <textarea id="taskInput" placeholder="Enter your task here"></textarea>
+            <button id="addTaskBtn">Add Task</button>
+        </div>
+    </div>
+
+    <!-- Modal for Deleting Task -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDeleteModal">&times;</span>
+            <h3>Delete Task</h3>
+            <div id="deleteTaskList" class="task-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Displaying Tasks -->
+    <div id="displayModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDisplayModal">&times;</span>
+            <h3>Task List</h3>
+            <div id="displayTaskList" class="task-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Marking Tasks as Complete -->
+    <div id="markCompleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeMarkCompleteModal">&times;</span>
+            <h3>Mark Tasks as Complete</h3>
+            <div id="markCompleteTaskList" class="task-list"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeConfirmationModal">&times;</span>
+            <h3 id="confirmationMessage"></h3>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];  // Array to store tasks
+
+        // Get all modal elements
+        const addModal = document.getElementById('addModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const displayModal = document.getElementById('displayModal');
+        const markCompleteModal = document.getElementById('markCompleteModal');
+        const confirmationModal = document.getElementById('confirmationModal'); // Confirmation Modal
+
+        // Get buttons that open modals
+        const openAddModalBtn = document.getElementById('openAddModal');
+        const openDeleteModalBtn = document.getElementById('openDeleteModal');
+        const openDisplayModalBtn = document.getElementById('openDisplayModal');
+        const openMarkCompleteModalBtn = document.getElementById('openMarkCompleteModal');
+
+        // Get close elements for each modal
+        const closeAddModal = document.getElementById('closeAddModal');
+        const closeDeleteModal = document.getElementById('closeDeleteModal');
+        const closeDisplayModal = document.getElementById('closeDisplayModal');
+        const closeMarkCompleteModal = document.getElementById('closeMarkCompleteModal');
+        const closeConfirmationModal = document.getElementById('closeConfirmationModal');
+
+        // Open modals
+        openAddModalBtn.addEventListener('click', () => addModal.style.display = 'flex');
+        openDeleteModalBtn.addEventListener('click', () => {
+            populateDeleteOptions();
+            deleteModal.style.display = 'flex';
+        });
+        openDisplayModalBtn.addEventListener('click', () => {
+            displayTaskList();
+            displayModal.style.display = 'flex';
+        });
+        openMarkCompleteModalBtn.addEventListener('click', () => {
+            populateMarkCompleteOptions();
+            markCompleteModal.style.display = 'flex';
+        });
+
+        // Close modals
+        closeAddModal.addEventListener('click', () => addModal.style.display = 'none');
+        closeDeleteModal.addEventListener('click', () => deleteModal.style.display = 'none');
+        closeDisplayModal.addEventListener('click', () => displayModal.style.display = 'none');
+        closeMarkCompleteModal.addEventListener('click', () => markCompleteModal.style.display = 'none');
+        closeConfirmationModal.addEventListener('click', () => confirmationModal.style.display = 'none');
+
+        // Add task when "Add Task" button is clicked
+        document.getElementById('addTaskBtn').addEventListener('click', function() {
+            const taskInput = document.getElementById('taskInput');
+            const taskText = taskInput.value.trim();
+            if (taskText !== "") {
+                tasks.push({ text: taskText, completed: false });
+                taskInput.value = '';
+                addModal.style.display = 'none';
+                showConfirmationMessage(`${tasks.length} task(s) added.`);
+            } else {
+                alert("Please enter a task.");
+            }
+        });
+
+        // Display the task list inside the display modal
+        function displayTaskList() {
+            const displayTaskList = document.getElementById('displayTaskList');
+            displayTaskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('task-item');
+                taskDiv.textContent = `${index + 1}. ${task.text}`;
+                displayTaskList.appendChild(taskDiv);
+            });
+        }
+
+        // Populate delete options in delete modal
+        function populateDeleteOptions() {
+            const deleteTaskList = document.getElementById('deleteTaskList');
+            deleteTaskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('task-item');
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `deleteTask${index}`;
+
+                const taskLabel = document.createElement('label');
+                taskLabel.textContent = task.text;
+                taskLabel.htmlFor = `deleteTask${index}`;
+
+                taskDiv.appendChild(checkbox);
+                taskDiv.appendChild(taskLabel);
+                deleteTaskList.appendChild(taskDiv);
+            });
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete Selected';
+            deleteBtn.addEventListener('click', function() {
+                const selectedTasks = [];
+                tasks = tasks.filter((task, index) => {
+                    const checkbox = document.getElementById(`deleteTask${index}`);
+                    if (checkbox && checkbox.checked) {
+                        selectedTasks.push(task);
+                        return false;
+                    }
+                    return true;
+                });
+
+                deleteModal.style.display = 'none';
+                showConfirmationMessage(`${selectedTasks.length} task(s) deleted.`);
+            });
+
+            deleteTaskList.appendChild(deleteBtn);
+        }
+
+        // Populate mark as complete options in the modal
+        function populateMarkCompleteOptions() {
+            const markCompleteTaskList = document.getElementById('markCompleteTaskList');
+            markCompleteTaskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const taskDiv = document.createElement('div');
+                taskDiv.classList.add('task-item');
+
+                const taskLabel = document.createElement('label');
+                taskLabel.textContent = task.text;
+
+                const completeBtn = document.createElement('button');
+                completeBtn.textContent = task.completed ? 'Completed' : 'Mark as Complete';
+                completeBtn.className = task.completed ? 'completed' : 'c-button';
+                completeBtn.disabled = task.completed;
+
+
+                completeBtn.addEventListener('click', function() {
+                    tasks[index].completed = true;
+                    completeBtn.textContent = 'Completed';
+                    completeBtn.classList.add('completed');
+                    completeBtn.disabled = true;
+                    showConfirmationMessage(`${task.text} marked as complete.`);
+                });
+
+                taskDiv.appendChild(taskLabel);
+                taskDiv.appendChild(completeBtn);
+                markCompleteTaskList.appendChild(taskDiv);
+            });
+        }
+
+        // Function to show confirmation message
+        function showConfirmationMessage(message) {
+            const confirmationMessage = document.getElementById('confirmationMessage');
+            confirmationMessage.textContent = message;
+            confirmationModal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
